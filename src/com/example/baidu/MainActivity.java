@@ -1,65 +1,45 @@
 package com.example.baidu;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
-
+import com.baidu.lbsapi.auth.e;
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
-import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
-import com.baidu.mapapi.map.GroundOverlayOptions;
-import com.baidu.mapapi.map.InfoWindow;
 import com.baidu.mapapi.map.MapStatus;
-import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
-import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
+import com.baidu.mapapi.map.MyLocationConfiguration.LocationMode;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
-import com.baidu.mapapi.map.BaiduMap.OnMarkerClickListener;
-import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
-import com.baidu.mapapi.map.MyLocationConfiguration.LocationMode;
 import com.baidu.mapapi.model.LatLng;
-import com.baidu.mapapi.model.LatLngBounds;
+import com.example.entity.Bean;
 import com.example.entity.Position;
 import com.example.lib.HttpApi;
-import com.example.lib.JsonUtil;
 import com.example.other.MapListAdapter;
 import com.example.thread.initData;
 import com.example.thread.sendMyPosition;
 
-import android.R.string;
 import android.app.Activity;
 import android.content.Intent;
-import android.hardware.SensorEvent;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings.Secure;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.LinearLayout;
@@ -85,6 +65,7 @@ public class MainActivity extends Activity {
 		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
 
 //		tv_option = (TextView) findViewById(R.id.tv_option);
 		gridView = (GridView) findViewById(R.id.grid_map_user_list);
@@ -104,7 +85,7 @@ public class MainActivity extends Activity {
 		mLocClient.start();
 		mBaiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(13).build()));
 		
-		init_click();
+		init_click();//初始化各种点击事件
 	}
 	
 	public void init_click(){
@@ -112,7 +93,7 @@ public class MainActivity extends Activity {
         requestLocButton.setText("普通");
         mCurrentMode = LocationMode.NORMAL; //普通
         mCurrentMarker = null; // 自定义图标
-
+        
         OnClickListener btnClickListener = new OnClickListener() {
             public void onClick(View v) {
                 switch (mCurrentMode) {
@@ -138,16 +119,25 @@ public class MainActivity extends Activity {
         };
         requestLocButton.setOnClickListener(btnClickListener);
 	
-        //定义点击人定位
-        OnClickListener gridClickListener = new OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-				// TODO Auto-generated method stub
-				
-			}
-		};
-		gridView.setOnClickListener(gridClickListener);
+        
+        OnItemClickListener gridItemClickListener = new AdapterView.OnItemClickListener() {
+        	@Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                Position posi=(Position)gridView.getItemAtPosition(position);
+                
+                //设置中中心点
+                LatLng ll = new LatLng(posi.getPosition_l(),posi.getPosition_r());
+                MapStatus.Builder builder = new MapStatus.Builder();
+                builder.target(ll).zoom(15);
+                mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build())); 
+                
+                HttpApi.MyLog(posi.getName()+" 点击了定位");
+                
+            }
+        };
+		gridView.setOnItemClickListener(gridItemClickListener);
+        
 	}
 	
 	/*
@@ -156,21 +146,10 @@ public class MainActivity extends Activity {
 	Handler handler = new Handler() {  
 	    @Override  
 	    public void handleMessage(Message msg) {  
-	        HttpApi.MyLog("回调情况～～～star");
-
 	        super.handleMessage(msg);  
 	        
-	        List<Map<String, Object>> json_list = (List<Map<String, Object>>) msg.obj;
-	        for (Map<String, Object> map : json_list) {
-				HttpApi.MyLog(map.get("name").toString());
-			}
-	        
-	    	initData(json_list);
-
-	        
-	        HttpApi.MyLog("回调情况～～～end");
-	        // TODO  
-	        // UI界面的更新等相关操作  
+			List<Position> json_list = (List<Position>) msg.obj;
+	    	initData(json_list); //获取到数据 
 	    }  
 	};  
 	
@@ -178,18 +157,19 @@ public class MainActivity extends Activity {
 	 * 添加marker
 	 * */
 	BitmapDescriptor bdGround = BitmapDescriptorFactory.fromResource(R.drawable.ground_overlay);
-	private void initData(List<Map<String, Object>>  json_list) {
+	private void initData(List<Position>  json_list) {
 		mBaiduMap.clear(); 
 		//初始化gridView 及lsit
 		List<Map<String,String>> list = new ArrayList<Map<String,String>>();
 		
-		//添加marker
-		for (Map<String, Object> map : json_list) {			
-			LatLng latLng = new LatLng(Double.valueOf(map.get("position_l").toString()), Double.valueOf(map.get("position_r").toString()));
+		//添加地图marker
+		for (Position position : json_list) {
 			
+			//设置地图上显示的名字view
+			LatLng latLng = new LatLng(position.getPosition_l(), position.getPosition_r());			
 			View view = View.inflate(getApplicationContext(), R.layout.item_bean, null);
 			TextView tView = (TextView)view.findViewById(R.id.item_bean);
-			tView.setText(map.get("name").toString() + "");
+			tView.setText(position.getName() + "");
 
 			//将View转化为Bitmap
 			BitmapDescriptor descriptor = BitmapDescriptorFactory.fromView(view);
@@ -198,22 +178,21 @@ public class MainActivity extends Activity {
 			
 			//设置头部展示哪些人参与了
 			Map<String,String> listItem = new HashMap<String,String>();
-			listItem.put("name", map.get("name").toString());
+			listItem.put("name", position.getName());
 			list.add(listItem);
 			
-			HttpApi.MyLog(map.get("name").toString()+","+map.get("position_l").toString()+","+map.get("position_r").toString());
-			HttpApi.MyLog(Double.valueOf(map.get("position_l").toString()).toString());
+			HttpApi.MyLog(position.getName()+","+position.getPosition_l()+","+position.getPosition_r());
 		}
 		
-		Integer columns = list.size();
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                200*columns, LinearLayout.LayoutParams.FILL_PARENT);
+		//设置哪些人加入定位
+		Integer columns = json_list.size();
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(200*columns, LinearLayout.LayoutParams.FILL_PARENT);
 		gridView.setLayoutParams(params); // 设置GirdView布局参数,横向布局的关键
         gridView.setColumnWidth(200); // 设置列表项宽
         gridView.setHorizontalSpacing(5); // 设置列表项水平间距
         gridView.setStretchMode(GridView.NO_STRETCH);
         gridView.setNumColumns(columns); // 设置列数量=列表集合数
-		gridView.setAdapter(new MapListAdapter(this, list, gridView));
+		gridView.setAdapter(new MapListAdapter(this, json_list, gridView));
 	    
 	}
 	
@@ -244,7 +223,7 @@ public class MainActivity extends Activity {
                 HttpApi.MyLog(location.getLatitude()+","+ location.getLongitude() +"详情地点：" + location.getAddrStr() + "   城市：" +location.getCity());    
             }
             
-            //发送消息
+            //发送自己的定位
             String m_szAndroidID = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
             Position position = new Position();
             position.setM_szAndroidID(m_szAndroidID);
@@ -257,6 +236,11 @@ public class MainActivity extends Activity {
             //加载其他人定位
             initData thr1 = new initData(handler);
     	    new Thread(thr1).start();
+    	    
+    	    
+    	    
+    	    
+    	    
 		}
 	}
 	

@@ -3,6 +3,8 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:gravity="center"
+android:descendantFocusability="blocksDescendants"
+	  
     android:orientation="vertical" >
 
     <Button
@@ -10,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
                 android:gravity="center"
-        
+                android:clickable="false"
         android:text="Button" />
 
 </LinearLayout>

@@ -3,6 +3,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.example.baidu.R;
+import com.example.entity.Position;
 import com.example.lib.HttpApi;
 
 import android.annotation.SuppressLint;
@@ -17,10 +18,10 @@ import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
 
-public class MapListAdapter extends ArrayAdapter<Map<String,String>> {
+public class MapListAdapter extends ArrayAdapter<Position> {
 
     private GridView gridView;
-    public MapListAdapter(Activity activity, List<Map<String,String>> imageAndTexts, GridView gridView1) {
+    public MapListAdapter(Activity activity, List<Position> imageAndTexts, GridView gridView1) {
         super(activity, 0, imageAndTexts);
         this.gridView = gridView1;
     }
@@ -35,15 +36,12 @@ public class MapListAdapter extends ArrayAdapter<Map<String,String>> {
         LayoutInflater inflater = activity.getLayoutInflater();
         rowView = inflater.inflate(R.layout.map_user_list, null);//找到gridView
 
-        Map<String,String> ItemData = getItem(position);//获取指定position item 的数据
-        
-        
-        String name = ItemData.get("name").toString();//获取本item的image_path
+        Position ItemData = getItem(position);//获取指定position item 的数据
+        String name = ItemData.getName();
 
         Button button = (Button) rowView.findViewById(R.id.btn_map_list_name);
         button.setText(name);
         
-        HttpApi.MyLog(name);
         
         return rowView;
     }
