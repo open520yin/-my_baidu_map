@@ -14,6 +14,7 @@ import android.util.Log;
 public class  HttpApi {
 	
 	public static String getApi(String url){  
+		MyLog(url);
         String cont = null;  
         HttpGet httpGet = new HttpGet(url);                       
         DefaultHttpClient httpClient = new DefaultHttpClient();   

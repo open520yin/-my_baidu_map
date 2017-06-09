@@ -27,11 +27,7 @@ public class initData implements Runnable {
         Message msg = new Message();  
         Bundle data = new Bundle(); 
         
-//        String api_data = HttpApi.getApi("http://bit.le-gou.com/test.php");
-        String api_data = HttpApi.getApi("http://106.14.254.252:83/index.php?c=mymap&a=getPosition");
-
-        HttpApi.MyLog(api_data);
-        
+        String api_data = HttpApi.getApi("http://106.14.254.252:83/index.php?c=mymap&a=getPosition");        
         //加入到Position里
         List<Map<String, Object>> json_list =  JsonUtil.getlistForJson(api_data);
         
@@ -45,7 +41,6 @@ public class initData implements Runnable {
         	position.setM_szAndroidID(map.get("m_szAndroidID").toString());
         	positions_list.add(position);
 		}
-        
         
         msg.setData(data);  
         msg.obj = positions_list;

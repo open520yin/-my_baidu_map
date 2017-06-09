@@ -14,13 +14,21 @@
         android:text="首次使用本系统请告之大家您是谁～～～～" />
 
     <EditText
-        android:id="@+id/editText1"
+        android:id="@+id/edit_register_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/textView1"
         android:layout_below="@+id/textView1"
         android:layout_marginTop="18dp"
         android:ems="10"
         android:inputType="textPersonName" />
+
+    <Button
+        android:id="@+id/btn_register"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/edit_register_name"
+        android:layout_marginTop="21dp"
+        android:text="提交" />
 
 </RelativeLayout>

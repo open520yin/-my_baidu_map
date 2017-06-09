@@ -1,6 +1,8 @@
 package com.example.baidu;
 
 import android.app.Application;
+import android.content.Intent;
+import android.os.Bundle;
 
 import com.baidu.mapapi.SDKInitializer;
 

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.baidu.lbsapi.auth.e;
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
@@ -27,16 +26,22 @@ import com.example.entity.Bean;
 import com.example.entity.Position;
 import com.example.lib.HttpApi;
 import com.example.other.MapListAdapter;
+import com.example.thread.Home;
 import com.example.thread.initData;
 import com.example.thread.sendMyPosition;
 
+import android.R.bool;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings.Secure;
+import android.util.DisplayMetrics;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.Window;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -52,6 +57,7 @@ public class MainActivity extends Activity {
 	private List<Bean> mapBeans;
     Button requestLocButton;
     private GridView gridView;
+    private String m_szAndroidID;
 
 	//定位相关
     BitmapDescriptor mCurrentMarker;
@@ -64,12 +70,13 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
+		this.requestWindowFeature(Window.FEATURE_NO_TITLE);//去掉标题栏  
 		setContentView(R.layout.activity_main);
 		
-
-//		tv_option = (TextView) findViewById(R.id.tv_option);
-		gridView = (GridView) findViewById(R.id.grid_map_user_list);
 		mMapView = (MapView) findViewById(R.id.bmapView);
+        m_szAndroidID = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
+
+        gridView = (GridView) findViewById(R.id.grid_map_user_list);
 		mBaiduMap = mMapView.getMap();
 		//开启定位图层
 		mBaiduMap.setMyLocationEnabled(true);
@@ -86,38 +93,13 @@ public class MainActivity extends Activity {
 		mBaiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(13).build()));
 		
 		init_click();//初始化各种点击事件
+
+		
+		
 	}
 	
 	public void init_click(){
-        requestLocButton = (Button) findViewById(R.id.button1);
-        requestLocButton.setText("普通");
-        mCurrentMode = LocationMode.NORMAL; //普通
-        mCurrentMarker = null; // 自定义图标
         
-        OnClickListener btnClickListener = new OnClickListener() {
-            public void onClick(View v) {
-                switch (mCurrentMode) {
-                    case NORMAL:
-                        requestLocButton.setText("跟随");
-                        mCurrentMode = LocationMode.FOLLOWING;
-                        mBaiduMap.setMyLocationConfiguration(new MyLocationConfiguration(mCurrentMode, true, mCurrentMarker));
-                        MapStatus.Builder builder = new MapStatus.Builder();
-                        builder.overlook(0);
-                        mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
-                        break;
-                    case FOLLOWING:
-                        requestLocButton.setText("普通");
-                        mCurrentMode = LocationMode.NORMAL;
-                        mBaiduMap
-                                .setMyLocationConfiguration(new MyLocationConfiguration(
-                                        mCurrentMode, true, mCurrentMarker));
-                        break;
-                    default:
-                        break;
-                }
-            }
-        };
-        requestLocButton.setOnClickListener(btnClickListener);
 	
         
         OnItemClickListener gridItemClickListener = new AdapterView.OnItemClickListener() {
@@ -140,6 +122,8 @@ public class MainActivity extends Activity {
         
 	}
 	
+	
+	
 	/*
 	 * 获取到数据源更新地图make
 	 * */
@@ -147,7 +131,6 @@ public class MainActivity extends Activity {
 	    @Override  
 	    public void handleMessage(Message msg) {  
 	        super.handleMessage(msg);  
-	        
 			List<Position> json_list = (List<Position>) msg.obj;
 	    	initData(json_list); //获取到数据 
 	    }  
@@ -185,13 +168,20 @@ public class MainActivity extends Activity {
 		}
 		
 		//设置哪些人加入定位
-		Integer columns = json_list.size();
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(200*columns, LinearLayout.LayoutParams.FILL_PARENT);
+		int size = json_list.size();
+        int length = 200;
+        DisplayMetrics dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
+        float density = dm.density;
+        int gridviewWidth = (int) (size * (length + 4) * density);
+        int itemWidth = (int) (length * density);
+		
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(gridviewWidth, LinearLayout.LayoutParams.FILL_PARENT);
 		gridView.setLayoutParams(params); // 设置GirdView布局参数,横向布局的关键
-        gridView.setColumnWidth(200); // 设置列表项宽
+        gridView.setColumnWidth(itemWidth); // 设置列表项宽
         gridView.setHorizontalSpacing(5); // 设置列表项水平间距
         gridView.setStretchMode(GridView.NO_STRETCH);
-        gridView.setNumColumns(columns); // 设置列数量=列表集合数
+        gridView.setNumColumns(size); // 设置列数量=列表集合数
 		gridView.setAdapter(new MapListAdapter(this, json_list, gridView));
 	    
 	}
@@ -220,11 +210,9 @@ public class MainActivity extends Activity {
                 MapStatus.Builder builder = new MapStatus.Builder();
                 builder.target(ll).zoom(13.0f);
                 mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build())); 
-                HttpApi.MyLog(location.getLatitude()+","+ location.getLongitude() +"详情地点：" + location.getAddrStr() + "   城市：" +location.getCity());    
             }
             
             //发送自己的定位
-            String m_szAndroidID = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
             Position position = new Position();
             position.setM_szAndroidID(m_szAndroidID);
             position.setPosition_r(location.getLongitude());
@@ -235,12 +223,7 @@ public class MainActivity extends Activity {
             
             //加载其他人定位
             initData thr1 = new initData(handler);
-    	    new Thread(thr1).start();
-    	    
-    	    
-    	    
-    	    
-    	    
+    	    new Thread(thr1).start(); 
 		}
 	}
 	
@@ -263,6 +246,17 @@ public class MainActivity extends Activity {
 		mMapView.onDestroy();
 		mBaiduMap = null;
 		bdGround.recycle();
+	}
+	
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addCategory(Intent.CATEGORY_HOME);
+            startActivity(intent);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
 	}
   
 }

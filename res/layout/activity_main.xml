@@ -19,31 +19,27 @@
         android:layout_margin="0dp" >
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="fill_parent"
             android:layout_height="match_parent"
             android:gravity="center"
             android:layout_gravity="center"
-            android:layout_margin="10dp" >
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            >
 
             <GridView
                 android:id="@+id/grid_map_user_list"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
                 android:layout_gravity="center"
+                android:background="#FFDAB9"
                 android:gravity="center" />
 	
         </LinearLayout>
     </HorizontalScrollView>
 	
 
-	<Button
-	     android:id="@+id/button1"
-	     android:layout_width="wrap_content"
-	     android:layout_height="wrap_content"
-	     android:layout_alignParentRight="true"
-	     android:layout_alignParentTop="true"
-	     android:layout_marginRight="25dp"
-	     android:layout_marginTop="100dip" />
+	
 
 	
 
